@@ -1,0 +1,31 @@
+{
+  "name": "chautari_dashboard_backend",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon server.js",
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "dotenv": "^16.5.0",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.15.2",
+    "nodemon": "^3.1.9",
+    "validator": "^13.12.0"
+  },
+  "description": "RestroNet is a project for showcasing the learning outcome of my 60days of learning.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AshokRai0115/restroNet.git"
+  },
+  "bugs": {
+    "url": "https://github.com/AshokRai0115/restroNet/issues"
+  },
+  "homepage": "https://github.com/AshokRai0115/restroNet#readme"
+}
