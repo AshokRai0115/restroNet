@@ -4,6 +4,7 @@ const app = express()
 
 const authRoutes = require("./src/routes/adminRoutes")
 const venueRoutes = require("./src/routes/venueRoutes")
+const userRoutes = require("./src/routes/userRoutes")
 const connDB = require("./src/config/db")
 
 
@@ -13,6 +14,7 @@ const port = process.env.PORT || 3001;
 app.use(express.json());
 app.use(authRoutes);
 app.use(venueRoutes)
+app.use(userRoutes)
 
 connDB();
 
