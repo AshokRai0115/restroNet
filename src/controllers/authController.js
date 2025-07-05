@@ -2,7 +2,6 @@
 const AdminSchema = require("../models/authModel")
 module.exports.adminSignup = async(req, res)=>{
     const{email, password, role} = req.body;
-    console.log(email, password)
     try{
         const user = await AdminSchema.create({email, password, role});
         
