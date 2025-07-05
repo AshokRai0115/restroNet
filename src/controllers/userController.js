@@ -46,10 +46,11 @@ module.exports.signUp = async (req, res) => {
     try {
         const user = await User.create({ email, password, name })
         if (user) {
-            res.status(200).send("successfully user signup.")
+            res.status(201).send("successfully user signup.")
         }
     } catch (err) {
-        res.send(err)
+        const error = handleError(err);
+        res.status(400).send(error);
     }
 }
 
