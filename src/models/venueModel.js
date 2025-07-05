@@ -11,9 +11,9 @@ const venueSchema = mongoose.Schema({
     },
     contact: {
         type: String,
-        required:[true, "Contact number is required."],
-        validate:{
-            validator: function(value){
+        required: [true, "Contact number is required."],
+        validate: {
+            validator: function(value) {
                 return phoneRegex.test(value)
             },
             message: (props) => `${props.value} is not a valid phone number.`
@@ -21,9 +21,20 @@ const venueSchema = mongoose.Schema({
     },
     cousine: {
         type: String,
-        required: [true, 'Cousine is required']
-    }
-}) 
+        required: [true, 'Cousine is required.']
+    },
+    restaurant_location: {
+        type: String,
+        // required: [true, "Location is required."]
+    },
+   
+    description: {
+        type: String,
+
+    },
+    
+
+})
 
 const VenueSchema = mongoose.model('Venue', venueSchema);
 

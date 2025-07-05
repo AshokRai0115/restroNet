@@ -13,3 +13,17 @@ module.exports.signUp = async (req, res) => {
         res.send(err)
     }
 }
+
+module.exports.allUser = async (req, res)=>{
+    try{
+        const users = await UserSchema.find({})
+        res.status(200).json({
+                message: "Successfully retrieved all users.",
+                count: users.length,
+                users: users
+            });
+    }catch(error){
+        console.error("Error fetching all users:", err);
+
+    }
+}

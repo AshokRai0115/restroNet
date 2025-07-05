@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
     "dev": "nodemon server.js",
     "start": "node server.js"
   },
@@ -13,6 +13,8 @@
   "dependencies": {
     "bcrypt": "^5.1.1",
     "bcryptjs": "^3.0.2",
+    "body-parser": "^2.2.0",
+    "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
@@ -28,5 +30,9 @@
   "bugs": {
     "url": "https://github.com/AshokRai0115/restroNet/issues"
   },
-  "homepage": "https://github.com/AshokRai0115/restroNet#readme"
+  "homepage": "https://github.com/AshokRai0115/restroNet#readme",
+  "devDependencies": {
+    "jest": "^30.0.3",
+    "supertest": "^7.1.1"
+  }
 }
