@@ -41,6 +41,23 @@ function handleError(err){
 
 }
 
+
+module.exports.loginUser = async (req, res) => {
+    const { email, password } = req.body;
+    try {
+        const user = await User.login(email, password);
+        if (user) {
+            const token = createToken(user._id)
+            res.cookie("jwt", token, { httpOnly: true, maxAge: maxAge })
+            res.status(200).json({message:"successfully logged in.", user, token })
+        }
+    }catch(error){
+        const err = handleError(error);
+        res.status(400).send(err);
+    }
+   
+}
+
 module.exports.signUp = async (req, res) => {
     const { email, password, name } = req.body
     try {
@@ -54,21 +71,6 @@ module.exports.signUp = async (req, res) => {
     }
 }
 
-module.exports.loginUser = async (req, res) => {
-    const { email, password } = req.body;
-    try {
-        const user = await User.login(email, password);
-        if (user) {
-            const token = createToken(user._id)
-            res.cookie("jwt", token, { httpOnly: true, maxAge: maxAge })
-            res.status(200).json({ user, token })
-        }
-    }catch(error){
-        const err = handleError(error);
-        res.status(400).send(err);
-    }
-   
-}
 
 module.exports.allUser = async (req, res) => {
     try {
