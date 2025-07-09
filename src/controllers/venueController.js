@@ -13,9 +13,9 @@ module.exports.all_venue = async(req, res)=>{
 }
 
 module.exports.create_venue = async(req, res)=>{
-    const{name, contact, cousine, restaurant_location} = req.body
+    const{restraunt_name, restaurant_contact, cuisine, restaurant_location} = req.body
     try{
-        const venue = await VenueSchema.create({name, contact, cousine, restaurant_location})
+        const venue = await VenueSchema.create({restraunt_name, restaurant_contact, cuisine, restaurant_location})
         res.status(201).json({
             msg: "Venue created successfully."
         })

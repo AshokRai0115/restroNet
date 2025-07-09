@@ -4,12 +4,12 @@ const { validate } = require("./authModel");
 const phoneRegex = /^(?:\+977)?0?(9[78]\d{8}|1\d{7}|[2-9]\d{6,7})$/;
 
 const venueSchema = mongoose.Schema({
-    name: {
+    restaurant_name: {
         type: String,
         required: [true, "Venue name is required."],
         unique: true,
     },
-    contact: {
+    restaurant_contact: {
         type: String,
         required: [true, "Contact number is required."],
         validate: {
@@ -19,9 +19,9 @@ const venueSchema = mongoose.Schema({
             message: (props) => `${props.value} is not a valid phone number.`
         }
     },
-    cousine: {
+    cuisine: {
         type: String,
-        required: [true, 'Cousine is required.']
+        required: [true, 'Cuisine is required.']
     },
     restaurant_location: {
         type: String,
