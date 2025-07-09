@@ -30,6 +30,9 @@ function handleError(err){
         if(err.keyPattern.username){
             error.username = "username already taken"
         }
+        if(err.keyPattern.password){
+            error.password = "Password must be 8 characters long"
+        }
         return error
     }
     if(err.message.includes("user validation failed")){
@@ -45,6 +48,7 @@ function handleError(err){
 module.exports.loginUser = async (req, res) => {
     const { email, password } = req.body;
     try {
+        console.log(email, password)
         const user = await User.login(email, password);
         if (user) {
             const token = createToken(user._id)
@@ -53,21 +57,22 @@ module.exports.loginUser = async (req, res) => {
         }
     }catch(error){
         const err = handleError(error);
-        res.status(400).send(err);
+        res.status(400).send(err, "error", error);
     }
    
 }
 
 module.exports.signUp = async (req, res) => {
-    const { email, password, name } = req.body
+    const { email, password, username } = req.body
     try {
-        const user = await User.create({ email, password, name })
+        const user = await User.create({ email, password, username })
         if (user) {
             res.status(201).send("successfully user signup.")
         }
-    } catch (err) {
-        const error = handleError(err);
-        res.status(400).send(error);
+    } catch (error) {
+        console.log(error)
+        const err = handleError(error);
+        res.status(400).send(err);
     }
 }
 
