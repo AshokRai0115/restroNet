@@ -1,92 +1,95 @@
-// import User from "../models/userModel";
-const User = require("../models/userModel")
-const jwt = require("jsonwebtoken")
-
-
+const User = require("../models/authModel");
+const jwt = require("jsonwebtoken");
+const handleError = require("../utils/handleError");
 
 const maxAge = 24 * 60 * 60;
+
 const createToken = (id) => {
-    return jwt.sign({ id }, "token id", {
-        expiresIn: maxAge
-    })
-}
+  return jwt.sign({ id }, "token id", { expiresIn: maxAge });
+};
 
-function handleError(err){
-    let error = {email: '', password: ''}
-    if(err.message == "Email is incorrect."){
-        error.email = "Please enter valid email"
-
-    }
-
-    if(err.message == "Password is incorrect"){
-        
-        error.password = "Password didn't match. Try Again."
-    }
-
-    if(err.code == 11000){
-        if(err.keyPattern.email){
-            error.email = "Email already used"
-        }
-        if(err.keyPattern.username){
-            error.username = "username already taken"
-        }
-        if(err.keyPattern.password){
-            error.password = "Password must be 8 characters long"
-        }
-        return error
-    }
-    if(err.message.includes("user validation failed")){
-        Object.values(err.errors).forEach(({properties})=>{
-            error[properties.path] = properties.message
-        })
-    }
-    return error
-
-}
-
-
+// @desc    Login user
 module.exports.loginUser = async (req, res) => {
-    const { email, password } = req.body;
-    try {
-        console.log(email, password)
-        const user = await User.login(email, password);
-        if (user) {
-            const token = createToken(user._id)
-            res.cookie("jwt", token, { httpOnly: true, maxAge: maxAge })
-            res.status(200).json({message:"successfully logged in.", user, token })
-        }
-    }catch(error){
-        const err = handleError(error);
-        res.status(400).send(err, "error", error);
-    }
-   
-}
+  const { email, password } = req.body;
+
+  try {
+    const user = await User.login(email, password);
+    const token = createToken(user._id);
+
+    res.cookie("jwt", token, { httpOnly: true, maxAge: maxAge * 1000 });
+    res.status(200).json({
+      message: "Successfully logged in.",
+      user,
+      token,
+    });
+  } catch (error) {
+    const errors = handleError(error);
+    res.status(400).json({ errors });
+  }
+};
 
 module.exports.signUp = async (req, res) => {
-    const { email, password, username } = req.body
-    try {
-        const user = await User.create({ email, password, username })
-        if (user) {
-            res.status(201).send("successfully user signup.")
-        }
-    } catch (error) {
-        console.log(error)
-        const err = handleError(error);
-        res.status(400).send(err);
-    }
-}
+  const { email, password, username, role } = req.body;
+
+  const user = new User({ email, password, username, role });
+
+  const errorBag = {
+    email: '',
+    password: '',
+    username: ''
+  };
+
+  try {
+    // Validate schema fields (required, minlength, format)
+    await user.validate();
+  } catch (err) {
+    Object.values(err.errors).forEach((errObj) => {
+      const { path, message } = errObj.properties;
+      if (errorBag.hasOwnProperty(path)) {
+        errorBag[path] = message;
+      }
+    });
+  }
+
+  // Check for duplicates manually
+  const [existingEmail, existingUsername] = await Promise.all([
+    User.findOne({ email }),
+    User.findOne({ username }),
+  ]);
+
+  if (existingEmail) errorBag.email = "Email already in use.";
+  if (existingUsername) errorBag.username = "Username already taken.";
+
+  // If any errors, return
+  if (errorBag.email || errorBag.password || errorBag.username) {
+    return res.status(400).json({ errors: errorBag });
+  }
+
+  try {
+    // If all good, save
+    await user.save();
+    res.status(201).json({
+      message: "Your account has been created successfully.",
+      user,
+    });
+  } catch (err) {
+    console.log("Unexpected save error:", err);
+    res.status(500).json({ message: "Unexpected error during signup." });
+  }
+};
 
 
+// @desc    Get all users
 module.exports.allUser = async (req, res) => {
-    try {
-        const users = await User.find({})
-        res.status(200).json({
-            message: "Successfully retrieved all users.",
-            count: users.length,
-            users: users
-        });
-    } catch (error) {
-        console.error("Error fetching all users:", err);
-
-    }
-}
+  try {
+    const users = await User.find({});
+    res.status(200).json({
+      message: "Successfully retrieved all users.",
+      count: users.length,
+      users,
+    });
+  } catch (error) {
+    const errors = handleError(error);
+    res.status(500).json({ errors });
+  }
+};
