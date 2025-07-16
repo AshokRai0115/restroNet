@@ -30,7 +30,7 @@ module.exports.loginUser = async (req, res) => {
 
 module.exports.signUp = async (req, res) => {
   const { email, password, username, role } = req.body;
-
+  console.log(req.body, "..........")
   const user = new User({ email, password, username, role });
 
   const errorBag = {

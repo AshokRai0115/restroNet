@@ -26,3 +26,10 @@ module.exports.adminLogin = async(req, res)=>{
         })
     }
 }
+
+exports.registerUser = (req, res) => {
+  const { name, email, password } = req.body;
+
+  res.status(201).json({ message: "User registered", data: { name, email } });
+};
+

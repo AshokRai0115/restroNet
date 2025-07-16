@@ -7,7 +7,6 @@ function handleError(err) {
     username: '',
   };
 
-  // Mongoose validation errors
   if (err.message && err.message.toLowerCase().includes("validation failed")) {
     Object.values(err.errors).forEach((errObj) => {
       const { path, message } = errObj.properties;
@@ -17,7 +16,6 @@ function handleError(err) {
     });
   }
 
-  // Duplicate key error
   if (err.code === 11000) {
     const dupFields = Object.keys(err.keyPattern || err.keyValue || {});
     dupFields.forEach((field) => {
