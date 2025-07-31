@@ -9,6 +9,8 @@ const connDB = require("./src/config/db")
 const cors = require('cors');
 // const bodyParser = require('body-parser');
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 
 
 
