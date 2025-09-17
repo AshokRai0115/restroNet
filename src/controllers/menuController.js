@@ -10,7 +10,6 @@ module.exports.all_menu = async (req, res, next) => {
 }
 
 module.exports.create_menu = async (req, res, next) => {
-    console.log("create menu")
     const newData = req.body
     try {
         const menu = await MenuSchema.create(newData)

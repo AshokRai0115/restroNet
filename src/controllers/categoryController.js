@@ -13,13 +13,16 @@ module.exports.all_category = async (req, res, next) => {
 }
 
 module.exports.create_category = async (req, res, next) => {
-    const newCategory = req.body;
-    console.log(newCategory, '.............................')
+     const newData = { ...req.body };
+
+        if (req.file) {
+            newData.icon = req.file.path; 
+        }
     try{
-        const category = await CategorySchema.create(newCategory);
+        const category = await CategorySchema.create({label, icon});
         res.status(201).json({
             msg: "Category created successfully.",
-            data: Categorybar,
+            data: category,
             success: true
         })
     }catch(error){
@@ -28,32 +31,39 @@ module.exports.create_category = async (req, res, next) => {
 }
 
 module.exports.update_category = async (req, res, next) => {
-    const data = req.body;
-    const id = req.params.id;
+    const { id } = req.params;
 
-    try{
-    const updatedCategory = await CategorySchema.findByIdAndUpdate(id, data, {
-        new: true
-    })
-    if(updatedCategory){
-         res.status(200).json({
-                success: true,
-                data: updatedCategory,
-                message: "Category updated successfully."
-            })
-    }
-    if(!updatedCategory){
-            res.status(404).json({
-                success: false,
-                data: '',
-                message: "Category not found."
-            })
+    try {
+        const updateData = { ...req.body };
+
+        if (req.file) {
+            updateData.icon = req.file.path;
         }
 
-    }catch(error){
+        const updatedCategory = await CategorySchema.findByIdAndUpdate(
+            id,
+            { $set: updateData },
+            { new: true, runValidators: true }
+        );
+
+        if (!updatedCategory) {
+            return res.status(404).json({
+                success: false,
+                message: "Category not found."
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: updatedCategory,
+            message: "Category updated successfully."
+        });
+    } catch (error) {
         next(error);
     }
-}
+};
+
+
 
 module.exports.get_single_category = async (req, res, next) =>{
     const id = req.params.id;
