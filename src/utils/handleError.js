@@ -1,34 +1,40 @@
 function handleError(err) {
-  console.log(err, "..............................................");
+  // Initialize an empty object to store error messages.
+  const errors = {};
 
-  const error = {
-    email: '',
-    password: '',
-    username: '',
-  };
+  // Log the original error for debugging purposes.
+  console.error(err);
 
-  if (err.message && err.message.toLowerCase().includes("validation failed")) {
-    Object.values(err.errors).forEach((errObj) => {
-      const { path, message } = errObj.properties;
-      if (error.hasOwnProperty(path)) {
-        error[path] = message;
-      }
-    });
+  // --- Handling Mongoose Validation Errors ---
+  // Mongoose validation errors have a 'name' property of 'ValidationError'.
+  if (err.name === 'ValidationError') {
+    // Iterate over the error details provided by Mongoose.
+    for (const field in err.errors) {
+      // The path of the invalid field and its message are directly accessible.
+      errors[field] = err.errors[field].message;
+    }
   }
 
+  // --- Handling MongoDB Duplicate Key Errors ---
+  // MongoDB duplicate key errors have a 'code' of 11000.
   if (err.code === 11000) {
-    const dupFields = Object.keys(err.keyPattern || err.keyValue || {});
-    dupFields.forEach((field) => {
-      if (field === "email") {
-        error.email = "Email already in use.";
-      }
-      if (field === "username") {
-        error.username = "Username already taken.";
-      }
-    });
+    const duplicateKey = Object.keys(err.keyValue)[0];
+    let customMessage = `The ${duplicateKey} '${err.keyValue[duplicateKey]}' is already in use.`;
+
+    // You can add more specific messages for certain fields here.
+    if (duplicateKey === 'item_name') {
+      customMessage = 'This item already exists. Please try editing instead.';
+    }
+
+    errors[duplicateKey] = customMessage;
   }
 
-  return error;
+  // --- Handling other types of errors ---
+  // You can add more conditions here to handle different error types.
+  // Example: if (err.name === 'CastError') { ... }
+
+  // Return the errors object. It will be empty if no specific errors were found.
+  return errors;
 }
 
 module.exports = handleError;

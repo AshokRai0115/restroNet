@@ -9,7 +9,7 @@ const createToken = (id) => {
 };
 
 // @desc    Login user
-module.exports.loginUser = async (req, res) => {
+module.exports.loginUser = async (req, res, next) => {
   const { email, password } = req.body;
 
   try {
@@ -23,12 +23,13 @@ module.exports.loginUser = async (req, res) => {
       token,
     });
   } catch (error) {
-    const errors = handleError(error);
-    res.status(400).json({ errors });
+    // const errors = handleError(error);
+    // res.status(400).json({ errors });
+    next(error)
   }
 };
 
-module.exports.signUp = async (req, res) => {
+module.exports.signUp = async (req, res, next) => {
   const { email, password, username, role } = req.body;
   console.log(req.body, "..........")
   const user = new User({ email, password, username, role });
@@ -72,9 +73,9 @@ module.exports.signUp = async (req, res) => {
       message: "Your account has been created successfully.",
       user,
     });
-  } catch (err) {
-    console.log("Unexpected save error:", err);
-    res.status(500).json({ message: "Unexpected error during signup." });
+  } catch (error) {
+    console.log("user", error)
+   next(error)
   }
 };
 

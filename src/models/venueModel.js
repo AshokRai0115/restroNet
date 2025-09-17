@@ -25,7 +25,7 @@ const venueSchema = mongoose.Schema({
     },
     restaurant_location: {
         type: String,
-        // required: [true, "Location is required."]
+        required: [true, "Location is required."]
     },
    
     description: {
