@@ -5,10 +5,9 @@ const {sendSuccess, sendError} = require("../utils/response")
 module.exports.all_venue = async (req, res, next) => {
     try {
         const filter = req.query.filter;
-        console.log("all venue")
         if (!filter) {
             const allVenues = await VenueSchema.find();
-            return sendSuccess({ success: true, count: allVenues.length, data: allVenues, message: "Restaurants fetched successfully." });
+            return sendSuccess({res, data:allVenues, message:"Restaurants fetched successfully.", statusCode: 200} );
         }
         const fields = Object.keys(VenueSchema.schema.paths).filter(f => f !== '_id' && f !== '__v');
         console.log("after check")
@@ -44,7 +43,7 @@ module.exports.create_venue = async (req, res, next) => {
     }
 }
 
-module.exports.update_venue = async (req, res) => {
+module.exports.update_venue = async (req, res, next) => {
     const updatedData = req.body;
     const id = req.params.id;
     try {
@@ -53,10 +52,20 @@ module.exports.update_venue = async (req, res) => {
             updatedData,
         })
 
-    } catch (err) {
-        res.status(500).json({
-            msg: err
-        })
+    } catch (error) {
+        next(error)
+    }
+}
+
+module.exports.delete_venue = async (req, res, next) => {
+    const id = req.params.id;
+    try{
+        const response = await VenueSchema.findByIdAndRemove(id);
+        if(response){
+            sendSuccess(res, "")
+        }
+    }catch(error){
+        next(error);
     }
 }
 

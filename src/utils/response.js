@@ -1,10 +1,11 @@
 
-const sendSuccess = (res, data, message = "Success", statusCode = 200) => {
+const sendSuccess = ({res, data, message = "Success", statusCode = 200}) => {
     const response = {
         success: true,
         message,
         data
     };
+    console.log(res.status(statusCode), "ssssssseeeeeeerrrrrssssssss")
     return res.status(statusCode).json(response);
 };
 
