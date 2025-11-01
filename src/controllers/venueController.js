@@ -62,7 +62,7 @@ module.exports.delete_venue = async (req, res, next) => {
     try{
         const response = await VenueSchema.findByIdAndRemove(id);
         if(response){
-            sendSuccess(res, "")
+            sendSuccess({res, data: response, statusCode: 200, message: "Successfully deleted the venue."})
         }
     }catch(error){
         next(error);
