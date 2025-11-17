@@ -32,6 +32,13 @@ const venueSchema = mongoose.Schema({
         type: String,
 
     },
+    images: [{ 
+        type: String 
+    }],
+    logo: {
+        type: String,
+        // required: [true, "Logo is require."]
+    }
     
 
 })
