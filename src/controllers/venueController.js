@@ -35,7 +35,6 @@ module.exports.create_venue = async (req, res, next) => {
     const { name, address, ...otherVenueData } = req.body;
     const files = req.files;
 
-    console.log(files, ".............................................");
 
     try {
         if (!files.logo || files.logo.length === 0) {
@@ -44,18 +43,21 @@ module.exports.create_venue = async (req, res, next) => {
             });
         }
 
-        const logoPath = files.logo[0].path;
+        const baseUrl = `${req.protocol}://${req.get("host")}`;
+       const logoFilename = files.logo[0].filename; 
+        const logoURL = `${baseUrl}/uploads/${logoFilename}`
 
-        let galleryPaths = [];
+       let galleryURLs = [];
         if (files.images && files.images.length > 0) {
-            galleryPaths = files.images.map(file => file.path);
+            galleryURLs = files.images.map(file => {
+                 return `${baseUrl}/uploads/${file.filename}`; // ⬅️ Correct Format
+            });
         }
-
         const venueDataToSave = {
             name,
             address,
-            logo: logoPath,
-            images: galleryPaths,
+            logo: logoURL,
+            images: galleryURLs,
             ...otherVenueData
         };
 

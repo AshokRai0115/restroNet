@@ -11,8 +11,10 @@ const userRoutes = require("./src/routes/userRoutes")
 const connDB = require("./src/config/db")
 const cors = require('cors');
 // const bodyParser = require('body-parser');
+const path = require('path');
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
 
 
 
@@ -20,8 +22,8 @@ app.use(express.urlencoded({ extended: true }));
 require('dotenv').config();
 
 const port = process.env.PORT || 3001;
-
 app.use(cors())
+app.use('/uploads', express.static(path.join(__dirname, 'src', 'uploads')));
 // app.use(bodyParser.json())
 app.use(express.json());
 app.use(authRoutes);
