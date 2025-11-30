@@ -7,6 +7,7 @@ const authRoutes = require("./src/routes/adminRoutes")
 const venueRoutes = require("./src/routes/venueRoutes")
 const menuRoutes = require("./src/routes/menuRoutes")
 const categoryRoutes = require("./src/routes/categoryRoutes")
+const tagRoutes = require("./src/routes/tagRoute")
 const userRoutes = require("./src/routes/userRoutes")
 const connDB = require("./src/config/db")
 const cors = require('cors');
@@ -30,6 +31,7 @@ app.use(authRoutes);
 app.use(venueRoutes)
 app.use(menuRoutes)
 app.use(categoryRoutes)
+app.use(tagRoutes)
 app.use(userRoutes)
 
 connDB();
