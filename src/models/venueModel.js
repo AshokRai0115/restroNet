@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 
 const { validate } = require("./authModel");
 const phoneRegex = /^(?:\+977)?0?(9[78]\d{8}|1\d{7}|[2-9]\d{6,7})$/;
+const emailRegex = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/;
 
 const venueSchema = mongoose.Schema({
     restaurant_name: {
@@ -17,6 +18,16 @@ const venueSchema = mongoose.Schema({
                 return phoneRegex.test(value)
             },
             message: (props) => `${props.value} is not a valid phone number.`
+        }
+    },
+    restaurant_email: {
+        type: String,
+        required: [true, "Email Address is required."],
+        validate: {
+            validator: function(value) {
+                return emailRegex.test(value)
+            },
+            message: (props) => `${props.value} is not a valid email address.`
         }
     },
     cuisine: {
