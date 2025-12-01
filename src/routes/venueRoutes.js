@@ -12,6 +12,7 @@ const uploadFields = upload.fields([
 ]);
 
 router.get('/venue', venueController.all_venue)
+router.get("/venue/:id", venueController.get_single_venue)
 router.post('/venue',uploadFields, venueController.create_venue)
 router.put("/venue/:id", venueController.update_venue)
  

@@ -31,6 +31,28 @@ module.exports.all_venue = async (req, res, next) => {
     }
 }
 
+module.exports.get_single_venue = async (req, res, next) =>{
+    const id = req.params.id;
+   try{
+     const singleVenue = await VenueSchema.findById(id);
+    res.status(200).json({
+        success: true,
+        data: singleVenue,
+        message: "Venue fetched successfully."
+    })
+    if(!singleVenue){
+         res.status(404).json({
+                success: false,
+                data: '',
+                message: "Venue not found."
+            })
+    }
+   }catch(error){
+    next(error)
+   }
+}
+
+
 module.exports.create_venue = async (req, res, next) => {
     const { name, address, ...otherVenueData } = req.body;
     const files = req.files;
