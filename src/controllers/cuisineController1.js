@@ -1,4 +1,4 @@
-const CuisineSchema = require('../models/cuisineSchema');
+const CuisineSchema = require('../models/cuisineModel');
 
 module.exports.all_cuisine = async (req, res, next) => {
     try{
@@ -31,8 +31,7 @@ module.exports.update_cuisine = async (req, res, next) => {
 
     try {
         const updateData = { ...req.body };
-
-        const updatedCuisine = await CuisineSchema.findByIdAndUpdate(
+            const updatedCuisine = await CuisineSchema.findByIdAndUpdate(
             id,
             { $set: updateData },
             { new: true, runValidators: true }

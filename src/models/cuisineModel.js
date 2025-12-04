@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const cuisineSchema = mongoose.Schema({
     name: {
         type: String,
-        required: [true, "Cisine name is required."],  
+        required: [true, "Cuisine name is required."],  
         unique: true
     }
 },{
