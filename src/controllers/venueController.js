@@ -82,7 +82,7 @@ module.exports.create_venue = async (req, res, next) => {
             images: galleryURLs,
             ...otherVenueData
         };
-
+        console.log(venueDataToSave, "vanue dat to save")
         const venue = await VenueSchema.create(venueDataToSave);
 
         res.status(201).json({

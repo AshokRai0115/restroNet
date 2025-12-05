@@ -38,6 +38,14 @@ const venueSchema = mongoose.Schema({
         type: String,
         required: [true, "Location is required."]
     },
+    long: {
+        type: Number,
+        required: [true, "longitude is required"]
+    },
+    lat: {
+        type: Number,
+        required: [true, "latitude is required"]
+    },
    
     description: {
         type: String,
