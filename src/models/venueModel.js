@@ -1,71 +1,155 @@
 const mongoose = require("mongoose");
 
-const { validate } = require("./authModel");
-const phoneRegex = /^(?:\+977)?0?(9[78]\d{8}|1\d{7}|[2-9]\d{6,7})$/;
-const emailRegex = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/;
+const venueSchema = new mongoose.Schema({
 
-const venueSchema = mongoose.Schema({
-    restaurant_name: {
-        type: String,
-        required: [true, "Venue name is required."],
-        unique: true,
-    },
-    restaurant_contact: {
-        type: String,
-        required: [true, "Contact number is required."],
-        validate: {
-            validator: function(value) {
-                return phoneRegex.test(value)
-            },
-            message: (props) => `${props.value} is not a valid phone number.`
-        }
-    },
-    restaurant_email: {
-        type: String,
-        required: [true, "Email Address is required."],
-        validate: {
-            validator: function(value) {
-                return emailRegex.test(value)
-            },
-            message: (props) => `${props.value} is not a valid email address.`
-        }
-    },
-    cuisine: {
-        type: String,
-        required: [true, 'Cuisine is required.']
-    },
-        tags: {
-        type: String,
-        required: [true, 'Tags are required.']
-    },
-    restaurant_location: {
-        type: String,
-        required: [true, "Location is required."]
-    },
-    long: {
-        type: Number,
-        required: [true, "longitude is required"]
-    },
-    lat: {
-        type: Number,
-        required: [true, "latitude is required"]
-    },
-   
-    description: {
-        type: String,
+  // ========== BASIC INFO ==========
+  restaurant_name: {
+    type: String,
+    required: true,
+    trim: true
+  },
 
+  description: String,
+
+  cuisine: [{
+    type: String,
+    required: true
+  }],
+
+  tags: [String],
+
+  signatureDishes: [String],
+  chefSpecial: String,
+
+  menuUrl: String,
+
+  // ========== LOCATION ==========
+  location: {
+    type: {
+      type: String,
+      enum: ["Point"],
+      default: "Point"
     },
-    images: [{ 
-        type: String 
-    }],
-    logo: {
-        type: String,
-        // required: [true, "Logo is require."]
+    coordinates: {
+      type: [Number],   // [lng, lat]
+      required: true
     }
-    
+  },
 
-})
+  // ========== CONTACT ==========
+  restaurant_contact: String,
+  restaurant_email: String,
+  website: String,
 
-const VenueSchema = mongoose.model('Venue', venueSchema);
+  // ========== MEDIA ==========
+  images: [String],
+  logo: String,
+  gallery: [String],
+  videoTour: String,
 
-module.exports = VenueSchema;
+  // ========== RECOMMENDATION METRICS ==========
+  avgRating: { type: Number, default: 0 },
+  totalReviews: { type: Number, default: 0 },
+
+  trendingScore: { type: Number, default: 0 },
+  popularityScore: { type: Number, default: 0 },
+  seasonalScore: { type: Number, default: 0 },
+
+  views: { type: Number, default: 0 },
+  checkIns: { type: Number, default: 0 },
+  favorites: { type: Number, default: 0 },
+
+  priceRange: {
+    type: String,
+    enum: ['low', 'medium', 'high', 'luxury'],
+    default: 'medium'
+  },
+
+  avgMealCost: Number,
+
+  // ========== DIETARY & FOOD STYLE ==========
+  isVeg: { type: Boolean, default: false },
+  isVegan: { type: Boolean, default: false },
+  isHalal: { type: Boolean, default: false },
+  isGlutenFree: { type: Boolean, default: false },
+  isKetoFriendly: { type: Boolean, default: false },
+
+  spiceLevel: {
+    type: String,
+    enum: ['mild', 'medium', 'hot', 'extra-hot']
+  },
+
+  // ========== FEATURES ==========
+  features: {
+    wifi: Boolean,
+    parking: Boolean,
+    rooftop: Boolean,
+    liveMusic: Boolean,
+    djNight: Boolean,
+    outdoorSeating: Boolean,
+    privateDining: Boolean,
+    smokingZone: Boolean,
+    wheelchairAccess: Boolean,
+    petsAllowed: Boolean
+  },
+
+  // ========== DINING EXPERIENCE ==========
+  ambience: {
+    type: String,
+    enum: ['romantic', 'family', 'party', 'business', 'quiet', 'luxury', 'casual']
+  },
+
+  crowdLevel: {
+    type: String,
+    enum: ['low', 'medium', 'high', 'very-high'],
+    default: 'medium'
+  },
+
+  musicType: {
+    type: String,
+    enum: ['live', 'dj', 'soft', 'none']
+  },
+
+  bestTimeToVisit: {
+    type: String,
+    enum: ['morning', 'afternoon', 'evening', 'night']
+  },
+
+  goodFor: [{
+    type: String,
+    enum: ['dates', 'family', 'business', 'birthdays', 'meetings', 'groups']
+  }],
+
+  // ========== TIME ==========
+  openingHours: {
+    open: String,
+    close: String
+  },
+
+  busyHours: [{
+    start: String,
+    end: String
+  }],
+
+  happyHours: [{
+    start: String,
+    end: String,
+    discount: Number
+  }],
+
+  // ========== ML/AI ==========
+  similarityVector: [Number], // For AI / ML recommendation
+  vectorUpdatedAt: Date,
+
+  // ========== PAYMENTS ==========
+  paymentMethods: [{
+    type: String,
+    enum: ['cash', 'card', 'esewa', 'khalti', 'fonepay']
+  }],
+
+
+}, { timestamps: true });
+
+venueSchema.index({ location: "2dsphere" });
+
+module.exports = mongoose.model("Venue", venueSchema);

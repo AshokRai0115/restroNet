@@ -72,7 +72,7 @@ module.exports.create_venue = async (req, res, next) => {
        let galleryURLs = [];
         if (files.images && files.images.length > 0) {
             galleryURLs = files.images.map(file => {
-                 return `${baseUrl}/uploads/${file.filename}`; // ⬅️ Correct Format
+                 return `${baseUrl}/uploads/${file.filename}`; 
             });
         }
         const venueDataToSave = {
@@ -82,7 +82,6 @@ module.exports.create_venue = async (req, res, next) => {
             images: galleryURLs,
             ...otherVenueData
         };
-        console.log(venueDataToSave, "vanue dat to save")
         const venue = await VenueSchema.create(venueDataToSave);
 
         res.status(201).json({
@@ -96,18 +95,51 @@ module.exports.create_venue = async (req, res, next) => {
 };
 
 module.exports.update_venue = async (req, res, next) => {
-    const updatedData = req.body;
+  try {
     const id = req.params.id;
-    try {
-        const venue = await VenueSchema.findByIdAndUpdate({
-            id,
-            updatedData,
-        })
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
 
-    } catch (error) {
-        next(error)
+    const { existingImages, cuisine, tags, ...otherFields } = req.body;
+
+    // Parse JSON fields
+    const parsedCuisine = JSON.parse(cuisine || "[]");
+    const parsedTags = JSON.parse(tags || "[]");
+    const parsedExistingImages = JSON.parse(existingImages || "[]");
+
+    // Prepare new images
+    let newImageUrls = [];
+    if (req.files.images && req.files.images.length > 0) {
+      newImageUrls = req.files.images.map(file => `${baseUrl}/uploads/${file.filename}`);
     }
-}
+
+    // Prepare logo
+    let logoUrl = otherFields?.logo; // in case old logo stays
+    if (req?.files?.logo && req.files?.logo?.length > 0) {
+      logoUrl = `${baseUrl}/uploads/${req?.files?.logo[0].filename}`;
+    }
+
+    const updateData = {
+      ...otherFields,
+      cuisine: JSON.stringify(parsedCuisine),
+      tags: JSON.stringify(parsedTags),
+      images: [...parsedExistingImages, ...newImageUrls],
+      logo: logoUrl,
+    };
+
+    const venue = await VenueSchema.findByIdAndUpdate(id, updateData, {
+      new: true,
+    });
+
+    return res.json({
+      success: true,
+      venue,
+    });
+  } catch (error) {
+    console.log(error);
+    next(error);
+  }
+};
+
 
 module.exports.delete_venue = async (req, res, next) => {
     const id = req.params.id;

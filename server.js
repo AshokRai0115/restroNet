@@ -11,6 +11,7 @@ const cuisineRoutes = require("./src/routes/cuisineRoutes")
 const tagRoutes = require("./src/routes/tagRoute")
 const reviewRoutes = require("./src/routes/reviewRoutes")
 const userRoutes = require("./src/routes/userRoutes")
+const recommendRoutes = require("./src/schema/recommendRoutes")
 const connDB = require("./src/config/db")
 const cors = require('cors');
 // const bodyParser = require('body-parser');
@@ -37,6 +38,7 @@ app.use(cuisineRoutes)
 app.use(tagRoutes)
 app.use(reviewRoutes)
 app.use(userRoutes)
+app.use(recommendRoutes)
 
 
 connDB();
