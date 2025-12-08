@@ -8,19 +8,19 @@ const reviewSchema = mongoose.Schema({
 
     rating: {
         type: Number,
-        required: [true, "Rating is required."]
+        // required: [true, "Rating is required."]
     },
     user_id: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
-        required: true
+        // required: true
     },
 
     // WHICH venue was rated
     venue_id: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Venue",
-        required: true
+        // required: true
     }
 
 
