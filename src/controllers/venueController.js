@@ -1,16 +1,15 @@
-// import VenueSchema from "../models/VenueSchema"
-const VenueSchema = require("../models/venueModel")
+// import Venue from "../models/Venue"
+const Venue = require("../models/venueModel")
 const { sendSuccess, sendError } = require("../utils/response")
 
 module.exports.all_venue = async (req, res, next) => {
     try {
         const filter = req.query.filter;
         if (!filter) {
-            const allVenues = await VenueSchema.find();
+            const allVenues = await Venue.find();
             return sendSuccess({ res, data: allVenues, message: "Restaurants fetched successfully.", statusCode: 200 });
         }
-        const fields = Object.keys(VenueSchema.schema.paths).filter(f => f !== '_id' && f !== '__v');
-        console.log("after check")
+        const fields = Object.keys(Venue.schema.paths).filter(f => f !== '_id' && f !== '__v');
 
         const orConditions = fields.map(field => ({
             [field]: { $regex: filter, $options: 'i' }
@@ -23,7 +22,7 @@ module.exports.all_venue = async (req, res, next) => {
             });
         }
 
-        const filtered = await VenueSchema.find({ $or: orConditions });
+        const filtered = await Venue.find({ $or: orConditions });
 
         res.status(200).json({ success: true, count: filtered.length, data: filtered, message: "Restaurants fetched" });
     } catch (error) {
@@ -34,7 +33,7 @@ module.exports.all_venue = async (req, res, next) => {
 module.exports.get_single_venue = async (req, res, next) =>{
     const id = req.params.id;
    try{
-     const singleVenue = await VenueSchema.findById(id);
+     const singleVenue = await Venue.findById(id);
     res.status(200).json({
         success: true,
         data: singleVenue,
@@ -53,36 +52,105 @@ module.exports.get_single_venue = async (req, res, next) =>{
 }
 
 
+// module.exports.create_venue = async (req, res, next) => {
+//     const { name, address, ...otherVenueData } = req.body;
+//     const files = req.files;
+
+
+//     try {
+//         if (!files.logo || files.logo.length === 0) {
+//             return res.status(400).json({
+//                 msg: 'Logo image is required for venue creation.'
+//             });
+//         }
+
+//         const baseUrl = `${req.protocol}://${req.get("host")}`;
+//        const logoFilename = files.logo[0].filename; 
+//         const logoURL = `${baseUrl}/uploads/${logoFilename}`
+
+//        let galleryURLs = [];
+//         if (files.images && files.images.length > 0) {
+//             galleryURLs = files.images.map(file => {
+//                  return `${baseUrl}/uploads/${file.filename}`; 
+//             });
+//         }
+//         const venueDataToSave = {
+//             name,
+//             address,
+//             logo: logoURL,
+//             images: galleryURLs,
+//             ...otherVenueData
+//         };
+//         const venue = await Venue.create(venueDataToSave);
+
+//         res.status(201).json({
+//             msg: "Venue created successfully.",
+//             venueId: venue._id
+//         });
+
+//     } catch (error) {
+//         next(error);
+//     }
+// };
+
 module.exports.create_venue = async (req, res, next) => {
+    // Destructure known simple fields (name, address) and capture the rest
     const { name, address, ...otherVenueData } = req.body;
     const files = req.files;
 
+    // A variable to hold the final, parsed data for Mongoose
+    let venueDataToSave = {};
 
     try {
+        // --- 1. Check for required files ---
         if (!files.logo || files.logo.length === 0) {
             return res.status(400).json({
                 msg: 'Logo image is required for venue creation.'
             });
         }
 
+        // --- 2. Handle File URLs ---
         const baseUrl = `${req.protocol}://${req.get("host")}`;
-       const logoFilename = files.logo[0].filename; 
+        const logoFilename = files.logo[0].filename; 
         const logoURL = `${baseUrl}/uploads/${logoFilename}`
 
-       let galleryURLs = [];
+        let galleryURLs = [];
         if (files.images && files.images.length > 0) {
             galleryURLs = files.images.map(file => {
-                 return `${baseUrl}/uploads/${file.filename}`; 
+                return `${baseUrl}/uploads/${file.filename}`; 
             });
         }
-        const venueDataToSave = {
+        
+        // --- 3. Parse the 'location' field if it exists in otherVenueData ---
+        if (otherVenueData.location && typeof otherVenueData.location === 'string') {
+            try {
+                // IMPORTANT: Parse the JSON string into an object
+                otherVenueData.location = JSON.parse(otherVenueData.location);
+                
+                // Optional double-check to ensure coordinates are numbers
+                if (Array.isArray(otherVenueData.location.coordinates)) {
+                    otherVenueData.location.coordinates = otherVenueData.location.coordinates.map(Number);
+                }
+                
+            } catch (e) {
+                // Handle parsing error (e.g., malformed JSON)
+                return res.status(400).json({
+                    msg: "Invalid JSON format for the 'location' field."
+                });
+            }
+        }
+        
+        // --- 4. Final Data Assembly and Save ---
+        venueDataToSave = {
             name,
             address,
             logo: logoURL,
             images: galleryURLs,
-            ...otherVenueData
+            ...otherVenueData // This now includes the parsed 'location' object
         };
-        const venue = await VenueSchema.create(venueDataToSave);
+        
+        // Mongoose will now receive a valid object for the GeoJSON schema
+        const venue = await Venue.create(venueDataToSave);
 
         res.status(201).json({
             msg: "Venue created successfully.",
@@ -90,10 +158,12 @@ module.exports.create_venue = async (req, res, next) => {
         });
 
     } catch (error) {
+        // This catch block will now receive a Mongoose validation error 
+        // ONLY if there is a problem with the data STRUCTURE/TYPES 
+        // AFTER parsing (e.g., missing 'type').
         next(error);
     }
 };
-
 module.exports.update_venue = async (req, res, next) => {
   try {
     const id = req.params.id;
@@ -126,7 +196,7 @@ module.exports.update_venue = async (req, res, next) => {
       logo: logoUrl,
     };
 
-    const venue = await VenueSchema.findByIdAndUpdate(id, updateData, {
+    const venue = await Venue.findByIdAndUpdate(id, updateData, {
       new: true,
     });
 
@@ -135,7 +205,6 @@ module.exports.update_venue = async (req, res, next) => {
       venue,
     });
   } catch (error) {
-    console.log(error);
     next(error);
   }
 };
@@ -144,7 +213,7 @@ module.exports.update_venue = async (req, res, next) => {
 module.exports.delete_venue = async (req, res, next) => {
     const id = req.params.id;
     try {
-        const response = await VenueSchema.findByIdAndRemove(id);
+        const response = await Venue.findByIdAndDelete(id);
         if (response) {
             sendSuccess({ res, data: response, statusCode: 200, message: "Successfully deleted the venue." })
         }
@@ -158,5 +227,4 @@ module.exports.filterVenue = async (req, res) => {
     const schemaFields = Object.keys(Venue.schema.paths).filter(
         (field) => field !== '_id' && field !== '__v'
     );
-    console.log(schemaFields, "ifle")
 }

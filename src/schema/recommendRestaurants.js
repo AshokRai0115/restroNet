@@ -3,7 +3,6 @@ const Venue = require("../models/venueModel")
 const recommendRestaurants = async (userId, userLat, userLng) => {
 
   const preference = await UserPreference.findOne({ userId });
-  console.log(preference, "prefe................>>>>>>>>")
   const maxDistance = preference?.maxDistance || 5000;
 
   // 1. Get restaurants in radius
