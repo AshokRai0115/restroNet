@@ -1,6 +1,6 @@
 const UserPreference = require("./userPreferenceSchema")
 const Venue = require("../models/venueModel")
-const recommendRestaurants = async (userId, userLat, userLng) => {
+const recommendRestaurants = async (userId, userLat, userLon) => {
 
   const preference = await UserPreference.findOne({ userId });
   const maxDistance = preference?.maxDistance || 5000;
@@ -9,7 +9,7 @@ const recommendRestaurants = async (userId, userLat, userLng) => {
   const venues = await Venue.find({
     location: {
       $near: {
-        $geometry: { type: "Point", coordinates: [userLng, userLat] },
+        $geometry: { type: "Point", coordinates: [userLon, userLat] },
         $maxDistance: maxDistance,
       }
     }

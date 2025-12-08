@@ -11,12 +11,12 @@ const venueSchema = new mongoose.Schema({
 
   description: String,
 
-  cuisine: [{
+  cuisine: {
     type: String,
     required: true
-  }],
+  },
 
-  tags: [String],
+  tags: {typs: String},
 
   signatureDishes: [String],
   chefSpecial: String,
@@ -31,7 +31,7 @@ const venueSchema = new mongoose.Schema({
       default: "Point"
     },
     coordinates: {
-      type: [Number],   // [lng, lat]
+      type: [Number],   // [lon, lat]
       required: true
     }
   },

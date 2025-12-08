@@ -42,6 +42,11 @@ const menuSchema = mongoose.Schema({
     },
     featured_image: {
         type: String
+    },
+    venue_id: {
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'Venue',                        
+        required: [true, "Venue ID is required."]
     }
 
 

@@ -59,7 +59,7 @@ module.exports.get_single_menu = async (req, res, next) =>{
         data: singleData,
         message: "Menu fetched successfully."
     })
-    if(!singleMenu){
+    if(!singleData){
          res.status(404).json({
                 success: false,
                 data: '',

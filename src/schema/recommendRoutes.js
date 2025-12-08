@@ -6,13 +6,13 @@ const {recommendRestaurants} = require("./recommendRestaurants")
 const router = Router()
 
 router.get("/recommend", async (req, res) => {
-  const { userId, lat, lng } = req.query;
+  const { userId, lat, lon } = req.query;
 
-  if (!userId || !lat || !lng) {
+  if (!userId || !lat || !lon) {
     return res.status(400).json({ message: "Missing parameters" });
   }
 
-  const restaurants = await recommendRestaurants(userId, parseFloat(lat), parseFloat(lng));
+  const restaurants = await recommendRestaurants(userId, parseFloat(lat), parseFloat(lon));
 
   res.json({
     success: true,
