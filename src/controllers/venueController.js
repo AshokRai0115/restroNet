@@ -102,14 +102,12 @@ module.exports.create_venue = async (req, res, next) => {
     let venueDataToSave = {};
 
     try {
-        // --- 1. Check for required files ---
         if (!files.logo || files.logo.length === 0) {
             return res.status(400).json({
                 msg: 'Logo image is required for venue creation.'
             });
         }
 
-        // --- 2. Handle File URLs ---
         const baseUrl = `${req.protocol}://${req.get("host")}`;
         const logoFilename = files.logo[0].filename; 
         const logoURL = `${baseUrl}/uploads/${logoFilename}`
@@ -120,6 +118,7 @@ module.exports.create_venue = async (req, res, next) => {
                 return `${baseUrl}/uploads/${file.filename}`; 
             });
         }
+        console.log(files.images, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", galleryURLs)
         
         // --- 3. Parse the 'location' field if it exists in otherVenueData ---
         if (otherVenueData.location && typeof otherVenueData.location === 'string') {
@@ -158,9 +157,7 @@ module.exports.create_venue = async (req, res, next) => {
         });
 
     } catch (error) {
-        // This catch block will now receive a Mongoose validation error 
-        // ONLY if there is a problem with the data STRUCTURE/TYPES 
-        // AFTER parsing (e.g., missing 'type').
+       
         next(error);
     }
 };

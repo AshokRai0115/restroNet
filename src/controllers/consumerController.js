@@ -11,6 +11,7 @@ const createToken = (id) => {
 // @desc    Login user
 module.exports.loginUser = async (req, res, next) => {
   const { email, password } = req.body;
+  console.log("losign>>>>>>>>>>>>>>>>>>>>>>", email, password)
 
   try {
     const user = await Consumer.login(email, password);
@@ -18,6 +19,7 @@ module.exports.loginUser = async (req, res, next) => {
 
     res.cookie("jwt", token, { httpOnly: true, maxAge: maxAge * 1000 });
     res.status(200).json({
+      success:true,
       message: "Successfully logged in.",
       user,
       token,
@@ -31,7 +33,7 @@ module.exports.loginUser = async (req, res, next) => {
 
 module.exports.signUp = async (req, res, next) => {
   const { email, password, username, role } = req.body;
-  console.log(req.body, "..........")
+  console.log(req.body, ".......... body")
   const newConsumer = new Consumer({ email, password, username, role });
 
   const errorBag = {
@@ -63,13 +65,14 @@ module.exports.signUp = async (req, res, next) => {
 
   // If any errors, return
   if (errorBag.email || errorBag.password || errorBag.username) {
-    return res.status(400).json({ errors: errorBag });
+    return res.status(400).json({ errors: errorBag, success: false });
   }
 
   try {
     // If all good, save
     await newConsumer.save();
     res.status(201).json({
+      success: true,
       message: "Your account has been created successfully.",
       newConsumer,
     });

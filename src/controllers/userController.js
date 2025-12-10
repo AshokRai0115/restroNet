@@ -11,6 +11,7 @@ const createToken = (id) => {
 // @desc    Login user
 module.exports.loginUser = async (req, res, next) => {
   const { email, password } = req.body;
+  console.log(req.body)
 
   try {
     const user = await User.login(email, password);
@@ -23,6 +24,7 @@ module.exports.loginUser = async (req, res, next) => {
       token,
     });
   } catch (error) {
+    console.log(error, ">>>>>>>>>>>>>>>>>>>>>>error")
     // const errors = handleError(error);
     // res.status(400).json({ errors });
     next(error)
