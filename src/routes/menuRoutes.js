@@ -9,6 +9,7 @@ const router = Router()
 
 router.get('/menu', menuController.all_menu)
 router.get("/menu/:id", menuController.get_single_menu)
+router.get("/menu/restaurant/:id", upload.none(), menuController.get_menu_by_restaurant);
 router.post('/menu', upload.none(), menuController.create_menu)
 router.put("/menu/:id", upload.none(), menuController.update_menu);
 router.delete("/menu/:id", menuController.delete_menu);

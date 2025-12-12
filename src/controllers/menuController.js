@@ -71,6 +71,32 @@ module.exports.get_single_menu = async (req, res, next) =>{
    }
 }
 
+module.exports.get_menu_by_restaurant = async (req, res, next) => {
+  const id = req.params.id;
+
+  try {
+    const restaurantMenu = await MenuSchema.find({ venue_id: id });
+
+    if (!restaurantMenu || restaurantMenu.length === 0) {
+      return res.status(404).json({
+        success: false,
+        data: [],
+        message: "No menu items found for this restaurant."
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: restaurantMenu,
+      message: "Menu fetched successfully."
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};
+
+
 module.exports.delete_menu = async (req, res, next) =>{
     const id = req.params.id;
     try{

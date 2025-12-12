@@ -12,11 +12,11 @@ const venueSchema = new mongoose.Schema({
   description: String,
 
   cuisine: {
-    type: String,
+    type: [String],
     required: true
   },
 
-  tags: {typs: String},
+  tags: {type: [String]},
 
   signatureDishes: [String],
   chefSpecial: String,

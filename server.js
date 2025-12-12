@@ -12,6 +12,7 @@ const tagRoutes = require("./src/routes/tagRoute")
 const reviewRoutes = require("./src/routes/reviewRoutes")
 const userRoutes = require("./src/routes/userRoutes")
 const consumerRoutes = require("./src/routes/consumerRoutes")
+const recommendationRoutes = require("./src/routes/recommendationRoutes")
 const recommendRoutes = require("./src/schema/recommendRoutes")
 const connDB = require("./src/config/db")
 const cors = require('cors');
@@ -41,6 +42,7 @@ app.use(reviewRoutes)
 app.use(userRoutes)
 app.use(consumerRoutes)
 app.use(recommendRoutes)
+app.use(recommendationRoutes)
 
 
 connDB();
