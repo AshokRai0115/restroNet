@@ -1,6 +1,7 @@
 // import Venue from "../models/Venue"
 const Venue = require("../models/venueModel")
 const { sendSuccess, sendError } = require("../utils/response")
+const { haversine } = require("../utils/haversine")
 
 module.exports.all_venue = async (req, res, next) => {
     try {
@@ -224,4 +225,77 @@ module.exports.filterVenue = async (req, res) => {
     const schemaFields = Object.keys(Venue.schema.paths).filter(
         (field) => field !== '_id' && field !== '__v'
     );
+}
+
+/**
+ * Find nearest venues to a user's location using Haversine formula
+ * Query params: lat (latitude), lon (longitude), limit (optional, default 10), unit (optional, default 'K' for km)
+ * Example: /api/venues/nearest?lat=40.7128&lon=-74.0060&limit=5&unit=K
+ */
+module.exports.nearest_venues = async (req, res, next) => {
+    try {
+        const { lat, lon, limit = 10, unit = 'K' } = req.query;
+
+        // Validate required parameters
+        if (!lat || !lon) {
+            return sendError({ 
+                res, 
+                statusCode: 400, 
+                message: "Latitude and longitude are required parameters (lat, lon)" 
+            });
+        }
+
+        const userLat = parseFloat(lat);
+        const userLon = parseFloat(lon);
+
+        // Validate that lat/lon are valid numbers
+        if (isNaN(userLat) || isNaN(userLon)) {
+            return sendError({ 
+                res, 
+                statusCode: 400, 
+                message: "Latitude and longitude must be valid numbers" 
+            });
+        }
+
+        // Validate coordinate ranges
+        if (userLat < -90 || userLat > 90 || userLon < -180 || userLon > 180) {
+            return sendError({ 
+                res, 
+                statusCode: 400, 
+                message: "Invalid coordinates. Latitude must be between -90 and 90, longitude between -180 and 180" 
+            });
+        }
+
+        // Fetch all venues with location data
+        const allVenues = await Venue.find({ "location.coordinates": { $exists: true } });
+
+        // Calculate distance for each venue using Haversine formula
+        const venuesWithDistance = allVenues.map(venue => {
+            const [venueLon, venueLat] = venue.location.coordinates;
+            
+            // Calculate distance using haversine algorithm
+            const distance = haversine(userLat, userLon, venueLat, venueLon, unit);
+
+            return {
+                ...venue.toObject(),
+                distance: parseFloat(distance.toFixed(2)) // Round to 2 decimal places
+            };
+        });
+
+        // Sort by distance (nearest first)
+        venuesWithDistance.sort((a, b) => a.distance - b.distance);
+
+        // Limit results
+        const limitedVenues = venuesWithDistance.slice(0, parseInt(limit));
+
+        return sendSuccess({ 
+            res, 
+            data: limitedVenues, 
+            statusCode: 200, 
+            message: `Found ${limitedVenues.length} nearest restaurants within ${parseInt(limit)} venues.` 
+        });
+
+    } catch (error) {
+        next(error);
+    }
 }
