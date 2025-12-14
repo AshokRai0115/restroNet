@@ -5,7 +5,7 @@ const sendSuccess = ({res, data, message = "Success", statusCode = 200}) => {
         message,
         data
     };
-    console.log(res.status(statusCode), "ssssssseeeeeeerrrrrssssssss")
+    console.log(res, data, "-----------------------------")
     return res.status(statusCode).json(response);
 };
 

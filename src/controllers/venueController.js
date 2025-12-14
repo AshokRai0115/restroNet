@@ -234,7 +234,7 @@ module.exports.filterVenue = async (req, res) => {
  */
 module.exports.nearest_venues = async (req, res, next) => {
     try {
-        const { lat, lon, limit = 10, unit = 'K' } = req.query;
+        const { lat, lon, limit = 3, unit = 'K' } = req.query;
 
         // Validate required parameters
         if (!lat || !lon) {
