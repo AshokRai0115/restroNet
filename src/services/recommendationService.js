@@ -2,32 +2,36 @@
 
 // Import core models and math utilities (assuming CommonJS syntax)
 const RestaurantFeatures = require('../models/featureModel');
-const UserProfile = require('../models/userProfileModel'); // ASSUME a model for user features
+// FIX: Use ConsumerProfile consistently and remove UserProfile import
+const ConsumerProfile = require('../models/consumerProfileModel'); 
 const { cosineSimilarity } = require('../utils/vector-math');
-const Restaurant = require('../models/venueModel'); // Venue model for final lookup
+const Restaurant = require('../models/venueModel'); 
+
+const ALPHA = 0.5;
 
 const DEFAULT_RECOMMENDATION_LIMIT = 20;
 
 /**
- * Calculates similarity between a User Profile and all available restaurants
+ * Calculates similarity between a Consumer Profile and all available restaurants
  * and returns the sorted list of recommendations.
- * @param {string} userId - The ID of the user requesting recommendations.
+ * @param {string} consumerId - The ID of the consumer requesting recommendations.
  * @param {number} limit - The maximum number of restaurants to return.
  * @returns {Array<{venue: object, score: number}>} - A sorted list of recommended restaurants.
  */
-async function getCBFRecommendations(userId, limit = DEFAULT_RECOMMENDATION_LIMIT) {
-    // 1. Fetch the User Profile Vector (U)
-    // NOTE: We assume you have a UserProfile model that stores the user's combined feature vector.
-    const user = await UserProfile.findOne({ user: userId }); 
+async function getCBFRecommendations(consumerId, limit = DEFAULT_RECOMMENDATION_LIMIT) {
+    // 1. Fetch the Consumer Profile Vector (C)
+    // FIX: Use ConsumerProfile model consistently
+    const consumer = await ConsumerProfile.findOne({ consumer: consumerId }); 
     
-    if (!user || !user.cbf_vector) {
-        console.warn(`CBF: User profile not found for user ${userId}. Returning empty list.`);
+    if (!consumer || !consumer.cbf_vector) {
+        console.warn(`CBF: Consumer profile not found for ID ${consumerId}. Returning empty list.`);
         return [];
     }
-    const userVector = user.cbf_vector; // This is the User Profile Vector (U)
+    const userVector = consumer.cbf_vector; // This is the Consumer Profile Vector (C)
 
+    // ... (rest of the logic is correct)
+    
     // 2. Fetch all Item Feature Vectors (R)
-    // Fetch all restaurant features and the associated Venue ID
     const allFeatures = await RestaurantFeatures.find()
         .select('restaurant cbf_cuisine_vector cbf_tags_vector cbf_rating_score');
 
@@ -37,26 +41,21 @@ async function getCBFRecommendations(userId, limit = DEFAULT_RECOMMENDATION_LIMI
 
     // 3. Score all Candidates
     const scoredRestaurants = [];
-    const featureDimension = userVector.length; // Ensure vectors match dimension if needed
+    const featureDimension = userVector.length;
 
     for (const itemFeature of allFeatures) {
-        // Concatenate the feature parts into one large vector (R)
-        // Ensure the order matches the creation logic in cbf-pipeline.js!
         const restaurantVector = [
             ...itemFeature.cbf_cuisine_vector,
             ...itemFeature.cbf_tags_vector,
             itemFeature.cbf_rating_score 
         ];
 
-        // Ensure user and restaurant vectors are the same length before comparison
         if (restaurantVector.length !== featureDimension) {
-            // In a production system, you'd handle this mismatch error gracefully.
             continue; 
         }
 
         const similarityScore = cosineSimilarity(userVector, restaurantVector);
         
-        // Only include items with a positive score
         if (similarityScore > 0) {
             scoredRestaurants.push({
                 restaurantId: itemFeature.restaurant,
@@ -66,14 +65,13 @@ async function getCBFRecommendations(userId, limit = DEFAULT_RECOMMENDATION_LIMI
     }
 
     // 4. Sort and Limit
-    scoredRestaurants.sort((a, b) => b.score - a.score); // Sort descending by score
+    scoredRestaurants.sort((a, b) => b.score - a.score);
     const topScores = scoredRestaurants.slice(0, limit);
 
-    // 5. Final Data Retrieval (Fetch full restaurant details for the top IDs)
+    // 5. Final Data Retrieval
     const topIds = topScores.map(item => item.restaurantId);
     const recommendedVenues = await Restaurant.find({ _id: { $in: topIds } });
 
-    // OPTIONAL: Merge scores back into venue data for frontend
     const finalRecommendations = recommendedVenues.map(venue => {
         const scoreData = topScores.find(s => s.restaurantId.equals(venue._id));
         return {
@@ -85,6 +83,64 @@ async function getCBFRecommendations(userId, limit = DEFAULT_RECOMMENDATION_LIMI
     return finalRecommendations;
 }
 
+// updateConsumerProfile function remains the same and is correct:
+async function updateConsumerProfile(consumerId, venueId, interactionWeight) {
+    if (!consumerId || !venueId || typeof interactionWeight !== 'number' || interactionWeight <= 0) {
+        return;
+    }
+
+    try {
+        const venueFeatures = await RestaurantFeatures.findOne({ restaurant: venueId })
+            .select('cbf_cuisine_vector cbf_tags_vector cbf_rating_score');
+        
+        if (!venueFeatures) {
+            console.warn(`Profile update failed: Features not found for venue ${venueId}.`);
+            return;
+        }
+
+        const R_interacted = [
+            ...venueFeatures.cbf_cuisine_vector,
+            ...venueFeatures.cbf_tags_vector,
+            venueFeatures.cbf_rating_score 
+        ];
+        const vectorLength = R_interacted.length;
+
+        let profileDoc = await ConsumerProfile.findOne({ consumer: consumerId });
+        let C_old;
+
+        if (!profileDoc) {
+            C_old = new Array(vectorLength).fill(0);
+            profileDoc = new ConsumerProfile({ consumer: consumerId, cbf_vector: C_old });
+        } else {
+            C_old = profileDoc.cbf_vector;
+        }
+
+        if (C_old.length !== vectorLength) {
+             console.warn(`WARNING: Consumer profile vector length (${C_old.length}) mismatch with item vector (${vectorLength}). Recalculating profile with new length.`);
+             C_old = new Array(vectorLength).fill(0);
+        }
+
+        const C_new = [];
+        const beta = 1.0 - ALPHA; 
+
+        for (let i = 0; i < vectorLength; i++) {
+            let newFeatureValue = 
+                (ALPHA * interactionWeight * R_interacted[i]) + 
+                (beta * C_old[i]);
+            
+            C_new.push(newFeatureValue);
+        }
+
+        profileDoc.cbf_vector = C_new;
+        profileDoc.last_recalculated = new Date();
+        await profileDoc.save();
+
+    } catch (error) {
+        console.error(`CRITICAL ERROR updating Consumer Profile ${consumerId}:`, error);
+    }
+}
+
 module.exports = {
-    getCBFRecommendations
+    getCBFRecommendations,
+    updateConsumerProfile
 };
