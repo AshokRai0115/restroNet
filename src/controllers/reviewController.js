@@ -46,7 +46,6 @@ module.exports.get_venue_reviews = async (req, res, next) => {
 
 module.exports.create_review = async (req, res, next) => {
     const newData = req.body;
-    console.log(newData, "soalr..................")
     try{
         const review = await ReviewSchema.create(newData);
         res.status(201).json({

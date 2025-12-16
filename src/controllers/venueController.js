@@ -1,7 +1,8 @@
 // import Venue from "../models/Venue"
-const Venue = require("../models/venueModel")
+const Venue = require("../models/venueModel.js")
 const { sendSuccess, sendError } = require("../utils/response")
 const { haversine } = require("../utils/haversine")
+const { triggerFeatureRecalculation } = require('../services/cbf-pipeline.js');
 
 module.exports.all_venue = async (req, res, next) => {
     try {
@@ -17,11 +18,13 @@ module.exports.all_venue = async (req, res, next) => {
         }));
 
 
+
         if (!isNaN(filter)) {
             fields.forEach(field => {
                 orConditions.push({ [field]: Number(filter) });
             });
         }
+      
 
         const filtered = await Venue.find({ $or: orConditions });
 
@@ -31,25 +34,25 @@ module.exports.all_venue = async (req, res, next) => {
     }
 }
 
-module.exports.get_single_venue = async (req, res, next) =>{
+module.exports.get_single_venue = async (req, res, next) => {
     const id = req.params.id;
-   try{
-     const singleVenue = await Venue.findById(id);
-    res.status(200).json({
-        success: true,
-        data: singleVenue,
-        message: "Venue fetched successfully."
-    })
-    if(!singleVenue){
-         res.status(404).json({
+    try {
+        const singleVenue = await Venue.findById(id);
+        res.status(200).json({
+            success: true,
+            data: singleVenue,
+            message: "Venue fetched successfully."
+        })
+        if (!singleVenue) {
+            res.status(404).json({
                 success: false,
                 data: '',
                 message: "Venue not found."
             })
+        }
+    } catch (error) {
+        next(error)
     }
-   }catch(error){
-    next(error)
-   }
 }
 
 
@@ -98,6 +101,7 @@ module.exports.create_venue = async (req, res, next) => {
     // Destructure known simple fields (name, address) and capture the rest
     const { name, address, ...otherVenueData } = req.body;
     const files = req.files;
+    console.log("fffffffffffffffffffffffffffffffffffffffffffff", files)
 
     // A variable to hold the final, parsed data for Mongoose
     let venueDataToSave = {};
@@ -110,28 +114,27 @@ module.exports.create_venue = async (req, res, next) => {
         }
 
         const baseUrl = `${req.protocol}://${req.get("host")}`;
-        const logoFilename = files.logo[0].filename; 
+        const logoFilename = files.logo[0].filename;
         const logoURL = `${baseUrl}/uploads/${logoFilename}`
 
         let galleryURLs = [];
         if (files.images && files.images.length > 0) {
             galleryURLs = files.images.map(file => {
-                return `${baseUrl}/uploads/${file.filename}`; 
+                return `${baseUrl}/uploads/${file.filename}`;
             });
         }
-        console.log(files.images, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", galleryURLs)
-        
+
         // --- 3. Parse the 'location' field if it exists in otherVenueData ---
         if (otherVenueData.location && typeof otherVenueData.location === 'string') {
             try {
                 // IMPORTANT: Parse the JSON string into an object
                 otherVenueData.location = JSON.parse(otherVenueData.location);
-                
+
                 // Optional double-check to ensure coordinates are numbers
                 if (Array.isArray(otherVenueData.location.coordinates)) {
                     otherVenueData.location.coordinates = otherVenueData.location.coordinates.map(Number);
                 }
-                
+
             } catch (e) {
                 // Handle parsing error (e.g., malformed JSON)
                 return res.status(400).json({
@@ -139,7 +142,7 @@ module.exports.create_venue = async (req, res, next) => {
                 });
             }
         }
-        
+
         // --- 4. Final Data Assembly and Save ---
         venueDataToSave = {
             name,
@@ -148,63 +151,70 @@ module.exports.create_venue = async (req, res, next) => {
             images: galleryURLs,
             ...otherVenueData // This now includes the parsed 'location' object
         };
+
         
         // Mongoose will now receive a valid object for the GeoJSON schema
         const venue = await Venue.create(venueDataToSave);
+         
+        triggerFeatureRecalculation(venue._id)
+            .catch(err => {
+                console.error(`CBF Trigger Failed for venue ${venue._id}:`, err);
+            });
 
         res.status(201).json({
             msg: "Venue created successfully.",
-            venueId: venue._id
+            venueId: venue._id,
+            data: venue
         });
 
     } catch (error) {
-       
+
         next(error);
     }
 };
 module.exports.update_venue = async (req, res, next) => {
-  try {
-    const id = req.params.id;
-    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    try {
+        const id = req.params.id;
+        const baseUrl = `${req.protocol}://${req.get("host")}`;
 
-    const { existingImages, cuisine, tags, ...otherFields } = req.body;
+        const { existingImages, cuisine, tags, ...otherFields } = req.body;
 
-    // Parse JSON fields
-    const parsedCuisine = JSON.parse(cuisine || "[]");
-    const parsedTags = JSON.parse(tags || "[]");
-    const parsedExistingImages = JSON.parse(existingImages || "[]");
+        // Parse JSON fields
+        const parsedCuisine = JSON.parse(cuisine || "[]");
+        const parsedTags = JSON.parse(tags || "[]");
+        const parsedExistingImages = JSON.parse(existingImages || "[]");
 
-    // Prepare new images
-    let newImageUrls = [];
-    if (req.files.images && req.files.images.length > 0) {
-      newImageUrls = req.files.images.map(file => `${baseUrl}/uploads/${file.filename}`);
+        // Prepare new images
+        let newImageUrls = [];
+        if (req.files.images && req.files.images.length > 0) {
+            newImageUrls = req.files.images.map(file => `${baseUrl}/uploads/${file.filename}`);
+        }
+
+        // Prepare logo
+        let logoUrl = otherFields?.logo; // in case old logo stays
+        if (req?.files?.logo && req.files?.logo?.length > 0) {
+            logoUrl = `${baseUrl}/uploads/${req?.files?.logo[0].filename}`;
+        }
+
+        const updateData = {
+            ...otherFields,
+            cuisine: JSON.stringify(parsedCuisine),
+            tags: JSON.stringify(parsedTags),
+            images: [...parsedExistingImages, ...newImageUrls],
+            logo: logoUrl,
+        };
+
+        const venue = await Venue.findByIdAndUpdate(id, updateData, {
+            new: true,
+        });
+
+        return res.json({
+            success: true,
+            venue,
+        });
+    } catch (error) {
+        next(error);
     }
-
-    // Prepare logo
-    let logoUrl = otherFields?.logo; // in case old logo stays
-    if (req?.files?.logo && req.files?.logo?.length > 0) {
-      logoUrl = `${baseUrl}/uploads/${req?.files?.logo[0].filename}`;
-    }
-
-    const updateData = {
-      ...otherFields,
-      cuisine: JSON.stringify(parsedCuisine),
-      tags: JSON.stringify(parsedTags),
-      images: [...parsedExistingImages, ...newImageUrls],
-      logo: logoUrl,
-    };
-
-    const venue = await Venue.findByIdAndUpdate(id, updateData, {
-      new: true,
-    });
-
-    return res.json({
-      success: true,
-      venue,
-    });
-  } catch (error) {
-    next(error);
-  }
 };
 
 
@@ -238,10 +248,10 @@ module.exports.nearest_venues = async (req, res, next) => {
 
         // Validate required parameters
         if (!lat || !lon) {
-            return sendError({ 
-                res, 
-                statusCode: 400, 
-                message: "Latitude and longitude are required parameters (lat, lon)" 
+            return sendError({
+                res,
+                statusCode: 400,
+                message: "Latitude and longitude are required parameters (lat, lon)"
             });
         }
 
@@ -250,19 +260,19 @@ module.exports.nearest_venues = async (req, res, next) => {
 
         // Validate that lat/lon are valid numbers
         if (isNaN(userLat) || isNaN(userLon)) {
-            return sendError({ 
-                res, 
-                statusCode: 400, 
-                message: "Latitude and longitude must be valid numbers" 
+            return sendError({
+                res,
+                statusCode: 400,
+                message: "Latitude and longitude must be valid numbers"
             });
         }
 
         // Validate coordinate ranges
         if (userLat < -90 || userLat > 90 || userLon < -180 || userLon > 180) {
-            return sendError({ 
-                res, 
-                statusCode: 400, 
-                message: "Invalid coordinates. Latitude must be between -90 and 90, longitude between -180 and 180" 
+            return sendError({
+                res,
+                statusCode: 400,
+                message: "Invalid coordinates. Latitude must be between -90 and 90, longitude between -180 and 180"
             });
         }
 
@@ -272,7 +282,7 @@ module.exports.nearest_venues = async (req, res, next) => {
         // Calculate distance for each venue using Haversine formula
         const venuesWithDistance = allVenues.map(venue => {
             const [venueLon, venueLat] = venue.location.coordinates;
-            
+
             // Calculate distance using haversine algorithm
             const distance = haversine(userLat, userLon, venueLat, venueLon, unit);
 
@@ -288,11 +298,11 @@ module.exports.nearest_venues = async (req, res, next) => {
         // Limit results
         const limitedVenues = venuesWithDistance.slice(0, parseInt(limit));
 
-        return sendSuccess({ 
-            res, 
-            data: limitedVenues, 
-            statusCode: 200, 
-            message: `Found ${limitedVenues.length} nearest restaurants within ${parseInt(limit)} venues.` 
+        return sendSuccess({
+            res,
+            data: limitedVenues,
+            statusCode: 200,
+            message: `Found ${limitedVenues.length} nearest restaurants within ${parseInt(limit)} venues.`
         });
 
     } catch (error) {

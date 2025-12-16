@@ -14,6 +14,7 @@ module.exports.getRecommendedRestaurants = async (req, res, next) => {
         } = req.query;
         
         let filterConditions = [];
+
         
         // ===================================
         // 2. Build individual filter conditions

@@ -14,6 +14,7 @@ const userRoutes = require("./src/routes/userRoutes")
 const consumerRoutes = require("./src/routes/consumerRoutes")
 const recommendationRoutes = require("./src/routes/recommendationRoutes")
 const recommendRoutes = require("./src/schema/recommendRoutes")
+const passworResetRoutes = require("./src/routes/passwordResetRoutes")
 const connDB = require("./src/config/db")
 const cors = require('cors');
 // const bodyParser = require('body-parser');
@@ -41,6 +42,7 @@ app.use(tagRoutes)
 app.use(reviewRoutes)
 app.use(userRoutes)
 app.use(consumerRoutes)
+app.use(passworResetRoutes)
 app.use(recommendRoutes)
 app.use(recommendationRoutes)
 

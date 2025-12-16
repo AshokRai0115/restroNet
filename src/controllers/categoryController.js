@@ -21,7 +21,6 @@ module.exports.create_category = async (req, res, next) => {
         const imageURL = `${baseUrl}/uploads/${iconFilename}`
         newData.icon = imageURL;
         }
-        console.log(newData?.icon)
     try{
         const category = await CategorySchema.create({label:newData.label, icon: newData.icon});
         res.status(201).json({
