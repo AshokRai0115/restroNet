@@ -70,9 +70,9 @@ exports.requestReset = async (req, res) => {
 // -----------------------------
 exports.resetPassword = async (req, res) => {
   try {
-    const { token, otp, newPassword } = req.body;
+    const { token, otp, password } = req.body;
 
-    if (!token || !otp || !newPassword)
+    if (!token || !otp || !password)
       return res.status(400).json({
         message: "Token, OTP and new password are required",
       });
@@ -93,7 +93,7 @@ exports.resetPassword = async (req, res) => {
     if (!user)
       return res.status(404).json({ message: "User not found" });
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     await updatePassword(user._id, hashedPassword);
     await markResetUsed(record._id);
