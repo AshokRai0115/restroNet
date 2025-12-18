@@ -178,12 +178,17 @@ module.exports.update_venue = async (req, res, next) => {
         const baseUrl = `${req.protocol}://${req.get("host")}`;
 
         const { existingImages, cuisine, tags, ...otherFields } = req.body;
-
+        
         // Parse JSON fields
-        const parsedCuisine = JSON.parse(cuisine || "[]");
-        const parsedTags = JSON.parse(tags || "[]");
+        const parsedCuisine = Array.isArray(cuisine) 
+    ? cuisine 
+    : (cuisine ? cuisine.split(',') : []);
+        const parsedTags= Array.isArray(tags) 
+    ? tags 
+    : (tags ? tags.split(',') : []);
         const parsedExistingImages = JSON.parse(existingImages || "[]");
-
+        
+        console.log(parsedCuisine, "<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>")
         // Prepare new images
         let newImageUrls = [];
         if (req.files.images && req.files.images.length > 0) {
@@ -195,11 +200,10 @@ module.exports.update_venue = async (req, res, next) => {
         if (req?.files?.logo && req.files?.logo?.length > 0) {
             logoUrl = `${baseUrl}/uploads/${req?.files?.logo[0].filename}`;
         }
-
         const updateData = {
             ...otherFields,
-            cuisine: JSON.stringify(parsedCuisine),
-            tags: JSON.stringify(parsedTags),
+            cuisine: parsedCuisine,
+            tags: parsedTags,
             images: [...parsedExistingImages, ...newImageUrls],
             logo: logoUrl,
         };
@@ -213,6 +217,8 @@ module.exports.update_venue = async (req, res, next) => {
             venue,
         });
     } catch (error) {
+      
+        console.log(error)
         next(error);
     }
 };
@@ -248,11 +254,16 @@ module.exports.nearest_venues = async (req, res, next) => {
 
         // Validate required parameters
         if (!lat || !lon) {
-            return sendError({
-                res,
-                statusCode: 400,
-                message: "Latitude and longitude are required parameters (lat, lon)"
-            });
+            // return sendError({
+            //     res,
+            //     statusCode: 400,
+            //     message: "Latitude and longitude are required parameters (lat, lon)"
+            // });
+              return res.json({
+            success: false,
+            status: 400,
+            message: "Latitude and longitude are required parameters (lat, lon)",
+        });
         }
 
         const userLat = parseFloat(lat);

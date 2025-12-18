@@ -39,7 +39,7 @@ const recommendRestaurants = async (userId, userLat, userLon) => {
     }
 
     // 6. Rating power
-    score += venue.avgRating * 2;
+    score += venue.averageRating * 2;
 
     // 7. Popular + Trending
     score += (venue.popularityScore * 1.5);

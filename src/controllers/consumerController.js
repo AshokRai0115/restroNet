@@ -1,4 +1,5 @@
 const Consumer = require("../models/consumerModel");
+const {initializeConsumerProfile} = require("../services/recommendationService")
 const jwt = require("jsonwebtoken");
 const handleError = require("../utils/handleError");
 
@@ -41,7 +42,6 @@ module.exports.signUp = async (req, res, next) => {
   };
 
   try {
-    // Validate schema fields (required, minlength, format)
     await newConsumer.validate();
   } catch (err) {
     Object.values(err.errors).forEach((errObj) => {
@@ -52,7 +52,6 @@ module.exports.signUp = async (req, res, next) => {
     });
   }
 
-  // Check for duplicates manually
   const [existingEmail, existingUsername] = await Promise.all([
     Consumer.findOne({ email }),
     Consumer.findOne({ username }),
@@ -61,24 +60,28 @@ module.exports.signUp = async (req, res, next) => {
   if (existingEmail) errorBag.email = "Email already in use.";
   if (existingUsername) errorBag.username = "Username already taken.";
 
-  // If any errors, return
   if (errorBag.email || errorBag.password || errorBag.username) {
     return res.status(400).json({ errors: errorBag, success: false });
   }
 
   try {
-    // If all good, save
+    // 1. Save the new consumer first
     await newConsumer.save();
+
+    // 2. INITIALIZE CBF PROFILE
+    // We call this right after save so the Consumer ID exists.
+    // We use await here to ensure the profile is ready before the response.
+    await initializeConsumerProfile(newConsumer._id);
+
     res.status(201).json({
       success: true,
       message: "Your account has been created successfully.",
       newConsumer,
     });
   } catch (error) {
-   next(error)
+    next(error);
   }
 };
-
 
 // @desc    Get all users
 module.exports.allUser = async (req, res) => {

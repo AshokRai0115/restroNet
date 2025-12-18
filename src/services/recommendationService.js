@@ -19,8 +19,6 @@ const DEFAULT_RECOMMENDATION_LIMIT = 20;
  * @returns {Array<{venue: object, score: number}>} - A sorted list of recommended restaurants.
  */
 async function getCBFRecommendations(consumerId, limit = DEFAULT_RECOMMENDATION_LIMIT) {
-    // 1. Fetch the Consumer Profile Vector (C)
-    // FIX: Use ConsumerProfile model consistently
     const consumer = await ConsumerProfile.findOne({ consumer: consumerId }); 
     
     if (!consumer || !consumer.cbf_vector) {
@@ -29,9 +27,7 @@ async function getCBFRecommendations(consumerId, limit = DEFAULT_RECOMMENDATION_
     }
     const userVector = consumer.cbf_vector; // This is the Consumer Profile Vector (C)
 
-    // ... (rest of the logic is correct)
     
-    // 2. Fetch all Item Feature Vectors (R)
     const allFeatures = await RestaurantFeatures.find()
         .select('restaurant cbf_cuisine_vector cbf_tags_vector cbf_rating_score');
 
@@ -39,7 +35,6 @@ async function getCBFRecommendations(consumerId, limit = DEFAULT_RECOMMENDATION_
         return [];
     }
 
-    // 3. Score all Candidates
     const scoredRestaurants = [];
     const featureDimension = userVector.length;
 
@@ -83,12 +78,96 @@ async function getCBFRecommendations(consumerId, limit = DEFAULT_RECOMMENDATION_
     return finalRecommendations;
 }
 
-// updateConsumerProfile function remains the same and is correct:
-async function updateConsumerProfile(consumerId, venueId, interactionWeight) {
-    if (!consumerId || !venueId || typeof interactionWeight !== 'number' || interactionWeight <= 0) {
-        return;
+
+/**
+ * Unified Discovery: Search by text and/or filter by cuisine, 
+ * then rank results by Consumer Profile.
+ */
+async function discoverVenues(consumerId, params = {}) {
+    const { q, cuisine, limit = 20 } = params;
+
+    // 1. Build the MongoDB Query
+    const query = {};
+
+    // Filter by Cuisine (Exact Match)
+    if (cuisine) {
+        query.cuisine = { $regex: `^${cuisine}$`, $options: 'i' };
     }
 
+    // Search by Text (Regex match on name or tags)
+    if (q) {
+        query.$or = [
+            { name: { $regex: q, $options: 'i' } },
+            { tags: { $regex: q, $options: 'i' } }
+        ];
+    }
+
+    // 2. Fetch matched venues from DB
+    const matchedVenues = await Restaurant.find(query).limit(50);
+    if (matchedVenues.length === 0) return [];
+
+    // 3. Get Consumer Profile for Ranking
+    const profile = await ConsumerProfile.findOne({ consumer: consumerId });
+    
+    // Fallback: If no profile exists, sort by all-time average rating
+    if (!profile || !profile.cbf_vector || profile.cbf_vector.length === 0) {
+        return matchedVenues.sort((a, b) => b.averageRating - a.averageRating).slice(0, limit);
+    }
+
+    const userVector = profile.cbf_vector;
+
+    // 4. Rank matched results using Cosine Similarity
+    const venueIds = matchedVenues.map(v => v._id);
+    const featureDocs = await RestaurantFeatures.find({ restaurant: { $in: venueIds } });
+
+    const rankedResults = matchedVenues.map(venue => {
+        const features = featureDocs.find(f => f.restaurant.equals(venue._id));
+        let score = 0;
+
+        if (features) {
+            const restaurantVector = [
+                ...features.cbf_cuisine_vector,
+                ...features.cbf_tags_vector,
+                features.cbf_rating_score
+            ];
+            
+            if (restaurantVector.length === userVector.length) {
+                score = cosineSimilarity(userVector, restaurantVector);
+            }
+        }
+
+        return { 
+            ...venue.toObject(), 
+            recommendation_score: score 
+        };
+    });
+
+    // 5. Final Sort: Highest Profile Match first
+    return rankedResults.sort((a, b) => b.recommendation_score - a.recommendation_score).slice(0, limit);
+}
+
+async function initializeConsumerProfile(consumerId) {
+    try {
+        const existing = await ConsumerProfile.findOne({ consumer: consumerId });
+        if (existing) return;
+
+        const newProfile = new ConsumerProfile({
+            consumer: consumerId,
+            cbf_vector: [] // Starts empty; will be sized during first interaction
+        });
+
+        await newProfile.save();
+        console.log(`CBF: Profile initialized for consumer ${consumerId}`);
+    } catch (error) {
+        console.error("CBF Error: Failed to initialize consumer profile:", error);
+    }
+}
+
+async function updateConsumerProfile(consumerId, venueId, interactionWeight) {
+    if (!consumerId || !venueId || typeof interactionWeight !== 'number' || interactionWeight < 0) {
+        console.log("..........>>>>>><<<<<<.............", consumerId, venueId,interactionWeight )
+        return;
+    }
     try {
         const venueFeatures = await RestaurantFeatures.findOne({ restaurant: venueId })
             .select('cbf_cuisine_vector cbf_tags_vector cbf_rating_score');
@@ -142,5 +221,7 @@ async function updateConsumerProfile(consumerId, venueId, interactionWeight) {
 
 module.exports = {
     getCBFRecommendations,
-    updateConsumerProfile
+    updateConsumerProfile,
+    initializeConsumerProfile,
+    discoverVenues
 };

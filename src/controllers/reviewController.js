@@ -1,4 +1,5 @@
 const ReviewSchema = require("../models/reviewModel");
+const {updateConsumerProfile} = require("../services/recommendationService")
 
 module.exports.all_review = async (req, res, next) => {
     try{
@@ -28,13 +29,13 @@ module.exports.get_venue_reviews = async (req, res, next) => {
     }
 
     // ✅ Calculate average rating
-    const avgRating =
+    const averageRating =
       reviews.reduce((sum, item) => sum + item.rating, 0) / reviews.length;
 
     res.status(200).json({
       success: true,
       total_reviews: reviews.length,
-      average_rating: Number(avgRating.toFixed(1)),
+      average_rating: Number(averageRating.toFixed(1)),
       data: reviews
     });
 
@@ -46,8 +47,12 @@ module.exports.get_venue_reviews = async (req, res, next) => {
 
 module.exports.create_review = async (req, res, next) => {
     const newData = req.body;
+    console.log(newData, "newData................ddddddddddddddddddd")
     try{
         const review = await ReviewSchema.create(newData);
+        const rating = review?.rating;
+        const interactionWeight = (rating - 1) / 4;
+        await updateConsumerProfile(newData?.user_id, newData?.venue_id, interactionWeight);
         res.status(201).json({
             msg: "Review created successfully.",
             data: review,

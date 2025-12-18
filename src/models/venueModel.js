@@ -48,8 +48,8 @@ const venueSchema = new mongoose.Schema({
   videoTour: String,
 
   // ========== RECOMMENDATION METRICS ==========
-  avgRating: { type: Number, default: 0 },
-  totalReviews: { type: Number, default: 0 },
+  averageRating: { type: Number, default: 0 },
+  ratingsCount: { type: Number, default: 0 },
 
   trendingScore: { type: Number, default: 0 },
   popularityScore: { type: Number, default: 0 },

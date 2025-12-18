@@ -5,7 +5,7 @@ const {recommendRestaurants} = require("./recommendRestaurants")
 
 const router = Router()
 
-router.get("/recommend", async (req, res) => {
+router.get("/recommendDemo", async (req, res) => {
   const { userId, lat, lon } = req.query;
 
   if (!userId || !lat || !lon) {
