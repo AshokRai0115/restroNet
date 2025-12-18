@@ -35,7 +35,6 @@ async function loadCbfConfig() {
             return acc;
         }, {});
 
-        console.log(`DEBUG: CBF Config Loaded. Total Cuisines: ${cuisines.length}`);
         
         // --- 2. Load TF-IDF Vocabulary (Conceptual) ---
         // NOTE: In a production system, this would load a persistent file (e.g., JSON)
@@ -84,7 +83,6 @@ async function triggerFeatureRecalculation(venueId) {
             });
         }
         
-        console.log(`DEBUG: OHE Vector Length: ${cbf_cuisine_vector.length}, Set Bits: ${cbf_cuisine_vector.filter(v => v === 1).length}`);
 
         // --- B. Calculate TF-IDF Tags Vector (Conceptual) ---
         // If TFIDF_VOCABULARY is empty, this vector will be empty/all zeros.
@@ -102,7 +100,6 @@ async function triggerFeatureRecalculation(venueId) {
                 }
              });
         }
-        console.log(`DEBUG: TF-IDF Vector Length: ${cbf_tags_vector.length}`);
         
         // --- C. Calculate Scaled Rating Score ---
         const rawRating = venue.average_rating || 0;
@@ -112,7 +109,6 @@ async function triggerFeatureRecalculation(venueId) {
         if (cbf_rating_score < 0) cbf_rating_score = 0;
         if (cbf_rating_score > 1) cbf_rating_score = 1;
         
-        console.log(`DEBUG: Rating Score: ${cbf_rating_score}`);
         
         // --- D. Upsert Features Document ---
         const features = await RestaurantFeatures.findOneAndUpdate(

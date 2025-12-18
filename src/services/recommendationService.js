@@ -95,28 +95,31 @@ async function discoverVenues(consumerId, params = {}) {
     }
 
     // Search by Text (Regex match on name or tags)
-    if (q) {
+   if (q) {
+        // Split input: "spicy pizza" -> ["spicy", "pizza"]
+        const words = q.trim().split(/\s+/);
+        
+        // Create an array of regex conditions: [{name: /spicy/i}, {name: /pizza/i}]
+        // This ensures the search finds documents containing ANY of the words
         query.$or = [
-            { name: { $regex: q, $options: 'i' } },
-            { tags: { $regex: q, $options: 'i' } }
+            { name: { $regex: words.join('|'), $options: 'i' } },
+            { tags: { $regex: words.join('|'), $options: 'i' } }
         ];
+
     }
 
-    // 2. Fetch matched venues from DB
     const matchedVenues = await Restaurant.find(query).limit(50);
     if (matchedVenues.length === 0) return [];
 
     // 3. Get Consumer Profile for Ranking
     const profile = await ConsumerProfile.findOne({ consumer: consumerId });
     
-    // Fallback: If no profile exists, sort by all-time average rating
     if (!profile || !profile.cbf_vector || profile.cbf_vector.length === 0) {
         return matchedVenues.sort((a, b) => b.averageRating - a.averageRating).slice(0, limit);
     }
 
     const userVector = profile.cbf_vector;
 
-    // 4. Rank matched results using Cosine Similarity
     const venueIds = matchedVenues.map(v => v._id);
     const featureDocs = await RestaurantFeatures.find({ restaurant: { $in: venueIds } });
 
@@ -157,7 +160,6 @@ async function initializeConsumerProfile(consumerId) {
         });
 
         await newProfile.save();
-        console.log(`CBF: Profile initialized for consumer ${consumerId}`);
     } catch (error) {
         console.error("CBF Error: Failed to initialize consumer profile:", error);
     }
@@ -165,7 +167,6 @@ async function initializeConsumerProfile(consumerId) {
 
 async function updateConsumerProfile(consumerId, venueId, interactionWeight) {
     if (!consumerId || !venueId || typeof interactionWeight !== 'number' || interactionWeight < 0) {
-        console.log("..........>>>>>><<<<<<.............", consumerId, venueId,interactionWeight )
         return;
     }
     try {

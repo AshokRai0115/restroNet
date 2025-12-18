@@ -56,52 +56,10 @@ module.exports.get_single_venue = async (req, res, next) => {
 }
 
 
-// module.exports.create_venue = async (req, res, next) => {
-//     const { name, address, ...otherVenueData } = req.body;
-//     const files = req.files;
-
-
-//     try {
-//         if (!files.logo || files.logo.length === 0) {
-//             return res.status(400).json({
-//                 msg: 'Logo image is required for venue creation.'
-//             });
-//         }
-
-//         const baseUrl = `${req.protocol}://${req.get("host")}`;
-//        const logoFilename = files.logo[0].filename; 
-//         const logoURL = `${baseUrl}/uploads/${logoFilename}`
-
-//        let galleryURLs = [];
-//         if (files.images && files.images.length > 0) {
-//             galleryURLs = files.images.map(file => {
-//                  return `${baseUrl}/uploads/${file.filename}`; 
-//             });
-//         }
-//         const venueDataToSave = {
-//             name,
-//             address,
-//             logo: logoURL,
-//             images: galleryURLs,
-//             ...otherVenueData
-//         };
-//         const venue = await Venue.create(venueDataToSave);
-
-//         res.status(201).json({
-//             msg: "Venue created successfully.",
-//             venueId: venue._id
-//         });
-
-//     } catch (error) {
-//         next(error);
-//     }
-// };
-
 module.exports.create_venue = async (req, res, next) => {
     // Destructure known simple fields (name, address) and capture the rest
     const { name, address, ...otherVenueData } = req.body;
     const files = req.files;
-    console.log("fffffffffffffffffffffffffffffffffffffffffffff", files)
 
     // A variable to hold the final, parsed data for Mongoose
     let venueDataToSave = {};
@@ -188,7 +146,6 @@ module.exports.update_venue = async (req, res, next) => {
     : (tags ? tags.split(',') : []);
         const parsedExistingImages = JSON.parse(existingImages || "[]");
         
-        console.log(parsedCuisine, "<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>")
         // Prepare new images
         let newImageUrls = [];
         if (req.files.images && req.files.images.length > 0) {

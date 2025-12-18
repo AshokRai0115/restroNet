@@ -3,8 +3,9 @@ const handleError = require("../utils/handleError")
 
 module.exports.discover = async (req, res, next) => {
 
-    const {consumerId} =req.params.id;
-    console.log(consumerId, "conusemr......................eid..............")
+    const id =req.params.id;
+    const consumerId = id;
+    console.log(consumerId, req?.query?.q, "conusemr......................eid..............")
     // const consumerId =req.user._id;
     try {
         const results = await discoverVenues(consumerId, {
